@@ -1,11 +1,10 @@
 ---
 title: "Metadata and Data Preprocessing"
 author: "Author: Asger Svenning<br>"
-date: "Date: `r Sys.Date()`"
+date: "Date: `r Sys.Date()`<br> <h1>Table of Contents</h1>"
 output: 
   bookdown::github_document2:
     toc: true
-    toc_title: "Table of Contents"
     number_sections: true
     keep_tex: true
 always_allow_html: true
@@ -22,6 +21,7 @@ library(forcats)
 library(kableExtra)
 library(exifr)
 library(lubridate)
+library(hash)
 ```
 
 \newpage
@@ -65,7 +65,9 @@ index %>%
   add_header_above(c("","Subdirectory" = 3), bold = T)
 ```
 
-Next I will attempt to extract the file metadata using the R package `exifr` which is a R wrapper around the file metadata software `exiftools`.
+## Image metadata
+
+Next I will attempt to extract the file metadata using the R package `exifr` which is a R wrapper around the file metadata software `exiftools`. Using this tool it is possible to extract the file metadata tags, particularly of interest here is the "CreateDate" tag, which contains the date and time of when the photo was taken. Using this it is possible to obtain the chronology of the image series:
 
 ```{r}
 library(furrr)
@@ -88,7 +90,7 @@ plan("sequential")
 saveRDS(index_meta, "index_meta.rds")
 ```
 
-```{r, eval=T}
+```{r, eval=T, fig.height = 3}
 index_meta <- readRDS("index_meta.rds")
 
 pretty_month_date <- function(x) {
@@ -113,7 +115,7 @@ index_meta %>%
   scale_x_date(labels = pretty_month_date,
                date_breaks = "1 day") +
   scale_color_brewer(palette = "Set1") +
-  labs(x = "Date", y = "Image Series", title = "Image Annotations Chronology") +
+  labs(x = "Date", y = "Image Series", title = "Image Series Chronology") +
   ggpubr::theme_pubr(base_family = "CMU Serif",
                      margin = F) +
   theme(title = element_text(face = "bold", size = 14),
@@ -121,3 +123,55 @@ index_meta %>%
                                   hjust = .5,
                                   size = 18))
 ```
+
+
+# Metadata overview
+Since I don't have all the files yet I cannot disaggregate flowering phenology classes over time, however I can disagreggate over image series. 
+
+
+```{r}
+index_time <- index_meta %>% 
+  transmute(Tag,Metadata,
+            file = str_remove(absolute, ".+\\/")) %>% 
+  pivot_wider(file,names_from=Tag,values_from=Metadata) %>% 
+  transmute(file, Time = ifelse(!is.na(CreateDate), CreateDate, FileCreateDate))
+
+index_time_dict <- hash(index_time$file, index_time$Time)
+
+metadata_agg <- index %>% 
+  filter(str_detect(file,"\\.csv$")) %>% 
+  mutate(data = map(relative, read_csv, show_col_types = F)) %>% 
+  select(file,data) %>%  
+  unnest(data) %>% 
+  mutate(region_shape = str_extract_all(region_shape_attributes, "[:digit:]+", simplify = T) %>% 
+           set_colnames(c("x","y","width","height")) %>% 
+           as_tibble,
+         class = str_extract_all(region_attributes,"[:alpha:]+", simplify=T)[,2],
+         location = str_extract(file, "[:alpha:]+"),
+         series = str_extract(file, ".+(?=\\-Annotations\\.csv$)")) %>% 
+  select(series, location, filename, region_count, region_shape, class) %>% 
+  unnest(region_shape) 
+  # mutate(Time = index_time_dict[filename]) # Needs all the files to actually get the time of all images
+
+write_rds(metadata_agg, "metadata_agg.rds", compress = "xz")
+```
+
+
+```{r, eval = T}
+metadata_agg <- read_rds("metadata_agg.rds")
+
+metadata_agg %>% 
+  count(series, class) %>% 
+  mutate(class = ifelse(class == "", "NA", class)) %>% 
+  complete(series, class, fill = list(n = 0)) %>%
+  # set_names(c("Image series", "Class", "Count")) %>% 
+  pivot_wider(series, names_from = class, values_from = n) %>% 
+  select(order(names(.))) %>% 
+  relocate(`NA`, .after = last_col()) %>% 
+  relocate(series, .before = 1) %>% 
+  kable("html",
+        caption = "Class Counts in Image Series") %>% 
+  kable_styling(full_width = T, bootstrap_options = "condensed")  
+  # column_spec(1:8, extra_css = "margin-bottom: 0px;")
+```
+
