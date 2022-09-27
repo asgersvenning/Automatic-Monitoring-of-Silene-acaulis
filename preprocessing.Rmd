@@ -1,12 +1,15 @@
 ---
 title: "Metadata and Data Preprocessing"
-author: "Asger Svenning"
-date: "`r Sys.Date()`"
+author: "Author: Asger Svenning<br>"
+date: "Date: `r Sys.Date()`"
 output: 
-  bookdown::pdf_document2:
+  bookdown::github_document2:
     toc: true
+    toc_title: "Table of Contents"
     number_sections: true
     keep_tex: true
+always_allow_html: true
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'README.md')) })
 ---
 
 ```{r setup, include=FALSE}
@@ -41,19 +44,19 @@ index <- tibble(dir = list.dirs(data_dir)) %>%
            replace(which(. == ""), "Root"))
 
 index %>% 
-  mutate(filetype = str_extract(file,"(?<=\\.).{1,4}$") %>% 
+  mutate(Filetype = str_extract(file,"(?<=\\.).{1,4}$") %>% 
            factor %>% 
            factor(levels = sort(levels(.)))) %>% 
-  filter(filetype != "db") %>% 
-  mutate(filetype = droplevels(filetype)) %>% 
-  count(src,filetype) %>%
-  complete(src,filetype,fill=list(n = 0)) %>% 
-  pivot_wider(filetype,names_from=src,values_from=n) %>% 
-  rename_with(snakecase::to_sentence_case, sep_in=NULL) %>%
-  rename("\\textbf{Filetype}" = Filetype) %>% 
-  kable("latex", align="c", booktabs = T, caption = "Overview of the Raw File Index", escape=F) %>% 
-  kable_paper(full_width = F, latex_options = "hold_position") %>% 
-  column_spec(1, bold = T, border_right = T) %>% 
+  filter(Filetype != "db") %>% 
+  mutate(Filetype = droplevels(Filetype)) %>% 
+  count(src,Filetype) %>%
+  complete(src,Filetype,fill=list(n = 0)) %>% 
+  mutate(src = paste0('<p  style="font-weight: normal;">', src, "</p>")) %>% 
+  pivot_wider(Filetype,names_from=src,values_from=n) %>% 
+  # rename("<b>Filetype</b>" = Filetype) %>% 
+  kable("html",align="c", caption = "Filetype Counts in the Raw File Index", escape=F) %>% 
+  kable_material(full_width = F, position = "center") %>%
+  column_spec(1, bold = T) %>% 
   add_header_above(c("","Subdirectory" = 3), bold = T)
 ```
 
@@ -83,23 +86,12 @@ saveRDS(index_meta, "index_meta.rds")
 ```{r, eval=T}
 index_meta <- readRDS("index_meta.rds")
 
-# index_meta %>%
-#   select(fid, src,Tag,Metadata) %>%
-#   filter(Tag != "SourceFile") %>%
-#   pivot_wider(c(fid,src), names_from=Tag, values_from = Metadata) %>%
-#   mutate(across(contains("Date"),ymd_hms),
-#          FileSize = as.integer(FileSize)) %>%
-#   pivot_longer(contains("Date"),names_to="dateType",values_to="time") %>%
-#   ggplot(aes(time,color=src)) +
-#   geom_histogram() +
-#   facet_grid(rows = vars(src), cols = vars(dateType), scales = "free")
-
 pretty_month_date <- function(x) {
   day <- mday(x)
   
-  month <- snakecase::to_sentence_case(as.character(month(x,T)))
+  month <- snakecase::to_sentence_case(as.character(month(x,T,F,"English_Denmark.1252")))
   
-  ifelse(day == 1, month, ifelse(wday(x) == 7, day, ""))
+  paste0(ifelse(wday(x) == 1, day, ""), ifelse(day == 7, paste0("\n", month), ""))
 }
 
 index_meta %>%
@@ -110,17 +102,17 @@ index_meta %>%
   mutate(Time = ifelse(!is.na(CreateDate), CreateDate, FileCreateDate) %>% 
            ymd_hms %>% 
            as.Date) %>% 
-  # select(src, Time) %>%
   filter(src != "meta") %>% 
-  
-  ggplot(aes(Time,fill=src)) +
-  stat_bin(position = "dodge2",
-           binwidth = 10) +
-  scale_y_continuous(expand = expansion(0, c(0, 1))) + 
+  ggplot(aes(Time,src)) +
+  geom_point() +
   scale_x_date(labels = pretty_month_date,
                date_breaks = "1 day") +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Date", y = "Image Series", title = "Image Annotations Chronology") +
   ggpubr::theme_pubr(base_family = "CMU Serif",
                      margin = F) +
-  theme(title = element_text(face = "bold", size = 14))
+  theme(title = element_text(face = "bold", size = 14),
+        plot.title = element_text(face = "plain",
+                                  hjust = .5,
+                                  size = 18))
 ```
-
