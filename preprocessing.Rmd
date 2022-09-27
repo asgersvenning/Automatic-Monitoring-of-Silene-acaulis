@@ -1,0 +1,126 @@
+---
+title: "Metadata and Data Preprocessing"
+author: "Asger Svenning"
+date: "`r Sys.Date()`"
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    number_sections: true
+    keep_tex: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, eval = F)
+
+library(tidyverse)
+library(magrittr)
+library(extrafont)
+library(forcats)
+library(kableExtra)
+library(exifr)
+library(lubridate)
+```
+
+\newpage
+
+# Data file path indexing
+
+In order to construct a reproducible, first we must index the metadata and data filepaths. This can be done using the base *R* functions `list.dir` and `list.files`.
+
+```{r, eval = T}
+data_dir <- "../Raw data/Init"
+
+index <- tibble(dir = list.dirs(data_dir)) %>% 
+  mutate(file = map(dir, list.files)) %>% 
+  unnest(file) %>% 
+  filter(str_detect(file,"\\..{1,4}")) %>% 
+  mutate(relative = map2_chr(dir,file,~paste0(.x,"/",.y)),
+         absolute = R.utils::getAbsolutePath(relative),
+         src = str_remove(dir, paste0(data_dir)) %>% 
+           str_remove("^/") %>% 
+           replace(which(. == ""), "Root"))
+
+index %>% 
+  mutate(filetype = str_extract(file,"(?<=\\.).{1,4}$") %>% 
+           factor %>% 
+           factor(levels = sort(levels(.)))) %>% 
+  filter(filetype != "db") %>% 
+  mutate(filetype = droplevels(filetype)) %>% 
+  count(src,filetype) %>%
+  complete(src,filetype,fill=list(n = 0)) %>% 
+  pivot_wider(filetype,names_from=src,values_from=n) %>% 
+  rename_with(snakecase::to_sentence_case, sep_in=NULL) %>%
+  rename("\\textbf{Filetype}" = Filetype) %>% 
+  kable("latex", align="c", booktabs = T, caption = "Overview of the Raw File Index", escape=F) %>% 
+  kable_paper(full_width = F, latex_options = "hold_position") %>% 
+  column_spec(1, bold = T, border_right = T) %>% 
+  add_header_above(c("","Subdirectory" = 3), bold = T)
+```
+
+Next I will attempt to extract the file metadata using the R package `exifr` which is a R wrapper around the file metadata software `exiftools`.
+
+```{r}
+library(furrr)
+
+read_exif_long <- function(...) {
+  read_exif(...) %>% 
+    mutate(across(everything(), as.character)) %>% 
+    select(!SourceFile) %>% 
+    pivot_longer(everything(),names_to="Tag",values_to="Metadata")
+}
+
+plan("multisession")
+index_meta <- index %>% 
+  select(absolute,src) %>% 
+  mutate(fid = row_number(),
+         exif = future_map(absolute, read_exif_long, tags = c("FileCreateDate","FileSize", "CreateDate","GPSDateTime"))) %>% 
+  unnest(exif)
+plan("sequential")
+
+saveRDS(index_meta, "index_meta.rds")
+```
+
+```{r, eval=T}
+index_meta <- readRDS("index_meta.rds")
+
+# index_meta %>%
+#   select(fid, src,Tag,Metadata) %>%
+#   filter(Tag != "SourceFile") %>%
+#   pivot_wider(c(fid,src), names_from=Tag, values_from = Metadata) %>%
+#   mutate(across(contains("Date"),ymd_hms),
+#          FileSize = as.integer(FileSize)) %>%
+#   pivot_longer(contains("Date"),names_to="dateType",values_to="time") %>%
+#   ggplot(aes(time,color=src)) +
+#   geom_histogram() +
+#   facet_grid(rows = vars(src), cols = vars(dateType), scales = "free")
+
+pretty_month_date <- function(x) {
+  day <- mday(x)
+  
+  month <- snakecase::to_sentence_case(as.character(month(x,T)))
+  
+  ifelse(day == 1, month, ifelse(wday(x) == 7, day, ""))
+}
+
+index_meta %>%
+  # select(fid, src,Tag,Metadata) %>%
+  filter(Tag != "SourceFile" & str_detect(absolute, "\\.JPG$")) %>%
+  pivot_wider(c(fid,src), names_from=Tag, values_from = Metadata) %>%
+  mutate(FileSize = as.integer(FileSize)) %>% 
+  mutate(Time = ifelse(!is.na(CreateDate), CreateDate, FileCreateDate) %>% 
+           ymd_hms %>% 
+           as.Date) %>% 
+  # select(src, Time) %>%
+  filter(src != "meta") %>% 
+  
+  ggplot(aes(Time,fill=src)) +
+  stat_bin(position = "dodge2",
+           binwidth = 10) +
+  scale_y_continuous(expand = expansion(0, c(0, 1))) + 
+  scale_x_date(labels = pretty_month_date,
+               date_breaks = "1 day") +
+  ggpubr::theme_pubr(base_family = "CMU Serif",
+                     margin = F) +
+  theme(title = element_text(face = "bold", size = 14))
+```
+
