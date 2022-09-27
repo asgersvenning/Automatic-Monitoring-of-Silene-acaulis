@@ -191,7 +191,9 @@ metadata_agg_tidy %>%
     summarize(out = n %>% set_names(loc)) %>% 
     pull(out)) %>% 
   add_header_above(c("", "Class" = 7), bold = T) %>% 
-  save_kable(file = "readme_files/chunk_figures/metadata_agg.pdf")
+  save_kable(file = "readme_files/chunk_figures/metadata_agg.pdf",
+             latex_header_includes = "\\usepackage[labelformat=empty]{caption}",
+             keep_tex = F)
 
 
 metadata_table_path <- "readme_files/chunk_figures/metadata_agg.pdf"
