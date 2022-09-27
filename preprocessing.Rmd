@@ -215,7 +215,7 @@ system2(
 
 A more digestible overview of the class frequencies might be found in a plot such as this one:
 
-```{r, eval=T}
+```{r, eval=T, warning=FALSE}
 meta_tab <- read_rds("metadata_agg_tidy.rds")
 
 meta_tab %>% 
@@ -223,10 +223,14 @@ meta_tab %>%
   mutate(Class = factor(Class, levels = c("Bud","Flower","Withered","Immature","Mature","Gone","NA"))) %>% 
   mutate(location = str_extract(series,"[:alpha:]+")) %>% 
   ggplot(aes(Class,n,fill=location)) +
-  geom_violin(scale = "width", size = .75) +
-  scale_y_continuous(trans = "log10",
-                     labels = as.integer) +
+  geom_violin(scale = "count",
+              size = .75) +
+  scale_y_continuous(trans = "log1p",
+                     labels = ~as.integer(round(.)),
+                     breaks = c(0, 10^(0:5)),
+                     limits = c(0, 10^5)) +
   scale_fill_brewer(palette = "Set1") +
+  coord_cartesian(expand = F) +
   guides(fill = guide_legend(ncol = 1)) +
   ggpubr::theme_pubr(base_family = "CMU Serif", margin = F) +
   labs(x = NULL, y = "Count", fill = "Location") +
