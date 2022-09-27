@@ -1,7 +1,7 @@
 Metadata and Data Preprocessing
 ================
 Author: Asger Svenning<br>
-Date: 2022-09-27<br>
+Date: 2022-09-28<br>
 <h1>
 Table of Contents
 </h1>
@@ -128,3 +128,12 @@ phenology classes over time, however I can disagreggate over image
 series.
 
 ![](readme_files/chunk_figures/metadata_agg.png)
+
+A more digestible overview of the class frequencies might be found in a
+plot such as this one:
+
+    ## Warning: Transformation introduced infinite values in continuous y-axis
+
+    ## Warning: Removed 21 rows containing non-finite values (stat_ydensity).
+
+![](readme_files/chunk_figures/unnamed-chunk-6-1.png)<!-- -->
