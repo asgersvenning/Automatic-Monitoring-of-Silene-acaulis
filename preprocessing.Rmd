@@ -12,8 +12,10 @@ knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = e
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, eval = F, fig.path = "readme_files/chunk_figures/")
+knitr::opts_chunk$set(echo = F, eval = F, fig.path = "readme_files/chunk_figures/", base.name = getwd())
 
+library(R.utils)
+System$findGhostscript(T,T,T)
 library(tidyverse)
 library(magrittr)
 library(extrafont)
@@ -157,10 +159,10 @@ write_rds(metadata_agg, "metadata_agg.rds", compress = "xz")
 ```
 
 
-```{r, eval = T}
+```{r}
 metadata_agg <- read_rds("metadata_agg.rds")
 
-metadata_agg %>% 
+metadata_agg_tidy <- metadata_agg %>% 
   count(series, class) %>% 
   mutate(class = ifelse(class == "", "NA", class)) %>% 
   complete(series, class, fill = list(n = 0)) %>%
@@ -169,9 +171,40 @@ metadata_agg %>%
   select(order(names(.))) %>% 
   relocate(`NA`, .after = last_col()) %>% 
   relocate(series, .before = 1) %>% 
-  kable("html",
-        caption = "Class Counts in Image Series") %>% 
-  kable_styling(full_width = T, bootstrap_options = "condensed")  
-  # column_spec(1:8, extra_css = "margin-bottom: 0px;")
+  arrange(str_extract(series, "[:alpha:]+"),
+          str_extract(series,"[:digit:]+") %>% as.numeric) 
+
+metadata_agg_tidy %>% 
+  mutate(series = str_remove(series,"[:alpha:]+\\-")) %>% 
+  rename("\\textbf{Series}" = series) %>% 
+  kable("latex",
+        booktabs = T,
+        align = "c",
+        caption = "Class Counts in Image Series",
+        escape = F) %>% 
+  kable_styling(font_size = 7) %>% 
+  column_spec(2, width = "2.25cm") %>%
+  column_spec(2:7, width = "1cm") %>%
+  pack_rows(index = metadata_agg_tidy %>% 
+    transmute(loc = str_extract(series,"[:alpha:]+")) %>% 
+    count(loc) %>% 
+    summarize(out = n %>% set_names(loc)) %>% 
+    pull(out)) %>% 
+  add_header_above(c("", "Class" = 7), bold = T) %>% 
+  save_kable(file = "readme_files/chunk_figures/metadata_agg.pdf")
+
+
+metadata_table_path <- "readme_files/chunk_figures/metadata_agg.pdf"
+
+system2(
+  "gswin64c",
+  c( 
+    "-sDEVICE=png16m -dTextAlphaBits=4 -r400 -o",
+    "readme_files/chunk_figures/metadata_agg.png ",
+    metadata_table_path
+  ) %>% 
+    str_replace_all("\\/","\\\\")
+)
 ```
 
+![](readme_files/chunk_figures/metadata_agg.png)
