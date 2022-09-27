@@ -13,7 +13,7 @@ knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = e
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, eval = F)
+knitr::opts_chunk$set(echo = F, eval = F, fig.path = "readme_files/chunk_figures/")
 
 library(tidyverse)
 library(magrittr)

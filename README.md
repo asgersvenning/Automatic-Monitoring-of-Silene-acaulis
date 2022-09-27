@@ -114,4 +114,4 @@ Next I will attempt to extract the file metadata using the R package
 `exifr` which is a R wrapper around the file metadata software
 `exiftools`.
 
-![](C:\Users\asger\DOCUME~1\UNIVER~1\Kandidat\7SEMES~1\PROJEK~1\AUTOMA~1\README~1/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](readme_files/chunk_figures/unnamed-chunk-3-1.png)<!-- -->
