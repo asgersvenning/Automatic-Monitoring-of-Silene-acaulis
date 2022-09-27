@@ -12,7 +12,7 @@ In order to construct a reproducible, first we must index the metadata
 and data filepaths. This can be done using the base *R* functions
 `list.dir` and `list.files`.
 
-<table class=" lightable-material" style="font-family: &quot;Source Sans Pro&quot;, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>
 
 Table 1.1: Filetype Counts in the Raw File Index
@@ -20,12 +20,11 @@ Table 1.1: Filetype Counts in the Raw File Index
 </caption>
 <thead>
 <tr>
-<th style="empty-cells: hide;" colspan="1">
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
 </th>
-<th style="padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; font-weight: bold; " colspan="3">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; font-weight: bold; " colspan="3">
 
-<div
-style="border-bottom: 1px solid #eee; padding-bottom: 16px; padding-top: 16px; height: 56px;">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 
 Subdirectory
 
@@ -34,31 +33,25 @@ Subdirectory
 </th>
 </tr>
 <tr>
-<th style="text-align:center;">
+<th style="text-align:center;font-weight: normal;">
 
-Filetype
+<b>Filetype</b>
 
 </th>
-<th style="text-align:center;">
-<p style="font-weight: normal;">
+<th style="text-align:center;font-weight: normal;">
 
 NARS-31
 
-</p>
 </th>
-<th style="text-align:center;">
-<p style="font-weight: normal;">
+<th style="text-align:center;font-weight: normal;">
 
 NARS-42
 
-</p>
 </th>
-<th style="text-align:center;">
-<p style="font-weight: normal;">
+<th style="text-align:center;font-weight: normal;">
 
 Root
 
-</p>
 </th>
 </tr>
 </thead>
@@ -69,17 +62,17 @@ Root
 csv
 
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;width: 3cm; ">
 
 0
 
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;width: 3cm; ">
 
 0
 
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;width: 3cm; ">
 
 32
 
@@ -91,17 +84,17 @@ csv
 JPG
 
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;width: 3cm; ">
 
 89
 
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;width: 3cm; ">
 
 76
 
 </td>
-<td style="text-align:center;">
+<td style="text-align:center;width: 3cm; ">
 
 0
 
